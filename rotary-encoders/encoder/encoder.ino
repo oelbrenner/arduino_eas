@@ -3,9 +3,44 @@
 // Connect a 10k resistor between ground and each pin on the board you are going to connect to an encoder.
 // This pulls the pins low to avoid fluttering mis-reads.
 // Connect the appropriate board pins the A and B pins on the encoder. Define which pins these are in the code.
+// Board setup:
+// analog pins: a0 - a15
+// digital pins: d0-d54
+// see README for pin restrictions
+
+// LED pin to act as stand in for mosfet
+const int mosfetLed_Pin = 13;
+
+
+// screen setup
+#include <SPI.h>
+#include "Adafruit_GFX.h"
+#include "Adafruit_HX8357.h"
+  // above libs assume the below pin assignments:
+  // CLK connects to SPI clock. On Mega's, its Digital 52
+  // MISO connects to SPI MISO. On Mega's, its Digital 50
+  // MOSI connects to SPI MOSI. On Mega's, its Digital 51
+  //
+  // These are 'flexible' lines that can be changed
+  // CS connects to our SPI Chip Select pin. We'll be using Digital 10
+  // D/C connects to our SPI data/command select pin. We'll be using Digital 9
+#define TFT_CS 10
+#define TFT_DC 9
+#define TFT_RST 8 // RST can be set to -1 if you tie it to Arduino's reset
+// Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
+Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
+// Assign human-readable names to some common 16-bit color values:
+#define	BLACK   0x0000
+#define	BLUE    0x001F
+#define	RED     0xF800
+#define	GREEN   0x07E0
+#define CYAN    0x07FF
+#define MAGENTA 0xF81F
+#define YELLOW  0xFFE0
+#define WHITE   0xFFFF
+#define ORANGE  0xFD20
 
 // Global vars
-
 // number of encoders
 int numEnc = 4;
 // define all the A pins on each encoder (in order)
@@ -24,8 +59,7 @@ float encPosLast[4];
 // utility variables
 int change = 0;
 int c = 0;
-// LED pin to act as stand in for mosfet
-const int mosfetLed_Pin = 13;
+
 byte solenoidActivity_State = LOW;
 // use the following delay to deal with encoder bounce
 const int encoderCheckInterval = 1000;
@@ -55,9 +89,9 @@ int OutletValvePin   = 15;
 int InletValvePin    = 16;
 
 // individual wheel dwell time
-int singleDwell 200
+int singleDwell = 200;
 // all wheels dwell time
-int allDwell 300
+int allDwell = 300;
 
 // setup all the vars for the LCD screen
 char lfPosString, rfPosString, lrPosString, rrPosString, msPosString;
@@ -70,35 +104,113 @@ void setup () {
   Serial.begin(9600);
   // refactor this to blink LED for boot sequence
   delay(2000);
-  pinMode(mosfetLed_Pin, OUTPUT);
-  digitalWrite(mosfetLed_Pin, solenoidActivity_State);
-  // loop to set up each encoder's initial values
-  for (c = 0; c < numEnc; c++) {
-    // tell us what it is doing
-    Serial.print("Initializing encoders ");
-    Serial.println(c);
-    // set the pins form INPUT
-    pinMode(encPinA[c], INPUT);
-    pinMode(encPinB[c], INPUT);
-    // set the modes and positions - on first read, it may change position once
-    //   depending on how the encoders are sitting (having a HIGH position that
-    //   gets compared to the initial LOW setting here in the first iteration of
-    //   the loop).
-    lastModeA[c] = LOW;
-    lastModeB[c] = LOW;
-    curModeA[c] = LOW;
-    curModeB[c] = LOW;
-    encPos[c] = 0;
-    encPosLast[c] = 0;
+  // start up the TFT screen
+  tft.begin();
+  // rotation 1 is landscape with SPI pins on right side
+  tft.setRotation(1);
+
+
+  // pinMode(mosfetLed_Pin, OUTPUT);
+  // digitalWrite(mosfetLed_Pin, solenoidActivity_State);
+  // // loop to set up each encoder's initial values
+  // for (c = 0; c < numEnc; c++) {
+  //   // tell us what it is doing
+  //   Serial.print("Initializing encoders ");
+  //   Serial.println(c);
+  //   // set the pins form INPUT
+  //   pinMode(encPinA[c], INPUT);
+  //   pinMode(encPinB[c], INPUT);
+  //   // set the modes and positions - on first read, it may change position once
+  //   //   depending on how the encoders are sitting (having a HIGH position that
+  //   //   gets compared to the initial LOW setting here in the first iteration of
+  //   //   the loop).
+  //   lastModeA[c] = LOW;
+  //   lastModeB[c] = LOW;
+  //   curModeA[c] = LOW;
+  //   curModeB[c] = LOW;
+  //   encPos[c] = 0;
+  //   encPosLast[c] = 0;
+  // }
+}
+
+// void loop () {
+//
+//   currentMillis = millis();
+//   check_encoders();
+//
+// }
+
+void loop(void) {
+  testText();
+  delay(3000);
+  tft.fillScreen(HX8357_BLACK);
+  tft.setTextColor(WHITE, BLACK);
+  testRects(GREEN);
+}
+
+
+unsigned long testText() {
+  tft.fillScreen(HX8357_BLACK);
+  unsigned long start = micros();
+  tft.setCursor(0, 0);
+  tft.setTextColor(ORANGE);    tft.setTextSize(3);
+  tft.println("OMFG industries");
+  tft.println();
+  tft.setTextColor(HX8357_GREEN);
+  tft.setTextSize(5);
+  tft.println("Range Rover P38");
+  tft.println();
+  tft.setTextColor(HX8357_RED);    tft.setTextSize(3);
+  tft.println("Suspension Controller");
+  tft.println();
+  tft.setTextSize(1);
+  tft.setTextColor(HX8357_WHITE);
+  tft.println(F("the software is provided as is, without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. in no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software."));
+  delay(1000);
+
+  return micros() - start;
+}
+
+unsigned long testRects(uint16_t color) {
+  // left side
+  tft.fillScreen(HX8357_BLACK);
+  tft.drawRect(20, 20, 100, 100, color);
+  // right side
+  tft.drawRect(360, 20, 100, 100, color);
+  tft.setTextColor(WHITE);
+  tft.setCursor(24, 24);
+  tft.setTextSize(1);
+  tft.println("LF encoder");
+  tft.setCursor(364, 24);
+  tft.println("RF encoder");
+  tft.setTextSize(5);
+  tft.setTextColor(RED, BLACK);
+  tft.setCursor(24, 74);
+  tft.println("OFF");
+  tft.setCursor(364, 74);
+  tft.println("OFF");
+  delay(1000);
+  tft.fillRect(24, 74, 85, 40, BLACK);
+  tft.fillRect(364, 74, 85, 40, BLACK);
+  tft.setTextColor(WHITE, BLACK);
+  for (int i = 0; i <= 42; i++) {
+    tft.setTextSize(5);
+    tft.setCursor(36, 74);
+    tft.println(i);
+    tft.setCursor(376, 74);
+    tft.println(i);
+    delay(60);
   }
+  tft.setTextColor(YELLOW, BLACK);
+  tft.setTextSize(5);
+  tft.setCursor(24, 74);
+  tft.println("MAX");
+  tft.setCursor(364, 74);
+  tft.println("MAX");
+
+  delay(2000);
 }
 
-void loop () {
-
-  currentMillis = millis();
-  check_encoders();
-
-}
 
 void check_encoders() {
   //Serial.print("entering check_encoders");
