@@ -52,3 +52,8 @@ There are a couple of other pins on the board:
 
 AREF. Reference voltage for the analog inputs. Used with analogReference().
 Reset. Bring this line LOW to reset the microcontroller. Typically used to add a reset button to shields which block the one on the board.
+
+
+### tft coordinate system
+  //    left/right, up/down, width, height
+  tft.fillRect(24, 74, 92, 42, YELLOW);

@@ -44,9 +44,9 @@ Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
 // number of encoders
 int numEnc = 4;
 // define all the A pins on each encoder (in order)
-int encPinA[4] = {2, 4, 6, 8};
+int encPinA[4] = {30, 32, 34, 36};
 // define all the B pins on each encoder (in order)
-int encPinB[4] = {3, 5, 7, 9};
+int encPinB[4] = {31, 33, 35, 37};
 // last mode of each pin (HIGH/LOW) for comparison - see if it changed
 int lastModeA[4];
 int lastModeB[4];
@@ -56,7 +56,7 @@ int curModeB[4];
 // current and last encoder positions
 float encPos[4];
 float encPosLast[4];
-// utility variables
+// utility variables for encoder timing
 int change = 0;
 int c = 0;
 
@@ -73,6 +73,7 @@ int lfSensor = 0;
 int rfSensor = 0;
 int lrSensor = 0;
 int rrSensor = 0;
+
 // height sensor pins
 int lfSensorPin = 6;
 int rfSensorPin = 7;
@@ -87,6 +88,7 @@ int rrValvePin = 13;
 int DiaphramValvePin = 14;
 int OutletValvePin   = 15;
 int InletValvePin    = 16;
+
 
 // individual wheel dwell time
 int singleDwell = 200;
@@ -103,11 +105,15 @@ char line4[21];
 void setup () {
   Serial.begin(9600);
   // refactor this to blink LED for boot sequence
-  delay(2000);
+  delay(20);
   // start up the TFT screen
   tft.begin();
   // rotation 1 is landscape with SPI pins on right side
   tft.setRotation(1);
+  blackScreen();
+  //splashScreen();
+  //blackScreen();
+  colorSegment();
 
 
   // pinMode(mosfetLed_Pin, OUTPUT);
@@ -141,16 +147,57 @@ void setup () {
 // }
 
 void loop(void) {
-  testText();
-  delay(3000);
-  tft.fillScreen(HX8357_BLACK);
-  tft.setTextColor(WHITE, BLACK);
-  testRects(GREEN);
+  cornerRects(WHITE);
 }
 
-
-unsigned long testText() {
+// fill screen with black
+unsigned long blackScreen() {
+  unsigned long start = micros();
   tft.fillScreen(HX8357_BLACK);
+  return micros() - start;
+}
+// color bars
+unsigned long colorSegment() {
+  unsigned long start = micros();
+  // red segments
+  tft.fillRect(0,     0, 21, 10, RED); // LF
+  tft.fillRect(459,   0, 21, 10, RED); // RF
+  tft.fillRect(0,   200, 21, 10, RED); // LR
+  tft.fillRect(459, 200, 21, 10, RED); // RR
+  // yellow segments
+  tft.fillRect(0,    10, 21, 30, YELLOW); // LF
+  tft.fillRect(459,  10, 21, 30, YELLOW); // RF
+  tft.fillRect(0,   210, 21, 30, YELLOW); // LR
+  tft.fillRect(459, 210, 21, 30, YELLOW); // RR
+  // green segments
+  tft.fillRect(0,    40, 21, 50, GREEN); // LF
+  tft.fillRect(459,  40, 21, 50, GREEN); // RF
+  tft.fillRect(0,   240, 21, 50, GREEN); // LR
+  tft.fillRect(459, 240, 21, 50, GREEN); // RR
+  // orange segments
+  tft.fillRect(0,    90, 21, 30, ORANGE); // LF
+  tft.fillRect(459,  90, 21, 30, ORANGE); // RF
+  tft.fillRect(0,   290, 21, 30, ORANGE); // LR
+  tft.fillRect(459, 290, 21, 30, ORANGE); // RR
+
+  // test stuff
+  tft.fillRect(200, 25, 21, 65, GREEN); // test
+  tft.fillRect(200, 10, 21, 30, YELLOW); // LF
+  tft.fillRect(200,  0, 21, 10, RED); // LF
+  tft.fillRect(200, 84, 21, 30, ORANGE); // LF
+  tft.fillRect(210,  4, 21, 5, WHITE); // LF
+  tft.drawRect(209,  3, 22, 6, BLACK);
+  tft.fillRect(210, 24, 21, 5, WHITE); // LF
+  tft.drawRect(209, 23, 22, 6, BLACK);
+  tft.fillRect(210, 44, 21, 5, WHITE); // LF
+  tft.drawRect(209, 43, 22, 6, BLACK);
+  tft.fillRect(210, 84, 21, 5, WHITE); // LF
+  tft.drawRect(209, 83, 22, 6, BLACK);
+  return micros() - start;
+}
+
+// startup message
+unsigned long splashScreen() {
   unsigned long start = micros();
   tft.setCursor(0, 0);
   tft.setTextColor(ORANGE);    tft.setTextSize(3);
@@ -166,49 +213,43 @@ unsigned long testText() {
   tft.setTextSize(1);
   tft.setTextColor(HX8357_WHITE);
   tft.println(F("the software is provided as is, without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. in no event shall the authors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software."));
-  delay(1000);
-
+  delay(1500);
   return micros() - start;
 }
 
-unsigned long testRects(uint16_t color) {
-  // left side
-  tft.fillScreen(HX8357_BLACK);
-  tft.drawRect(20, 20, 100, 100, color);
-  // right side
-  tft.drawRect(360, 20, 100, 100, color);
-  tft.setTextColor(WHITE);
-  tft.setCursor(24, 24);
-  tft.setTextSize(1);
-  tft.println("LF encoder");
-  tft.setCursor(364, 24);
-  tft.println("RF encoder");
-  tft.setTextSize(5);
-  tft.setTextColor(RED, BLACK);
-  tft.setCursor(24, 74);
-  tft.println("OFF");
-  tft.setCursor(364, 74);
-  tft.println("OFF");
-  delay(1000);
-  tft.fillRect(24, 74, 85, 40, BLACK);
-  tft.fillRect(364, 74, 85, 40, BLACK);
+unsigned long cornerRects(uint16_t color) {
+  unsigned long start = micros();
+  // left front
+  tft.drawRect(20, 0, 100, 120, color);
+  // right front
+  tft.drawRect(360, 0, 100, 120, color);
+  // left rear
+  tft.drawRect(20, 200, 100, 120, color);
+  // right rear
+  tft.drawRect(360, 200, 100, 120, color);
+
+  // text rectangle
+  // fill the background
+  tft.fillRect(24, 74, 92, 42, BLACK); // LF background
+  tft.fillRect(364, 74, 92, 42, BLACK);// RF background
+  tft.fillRect(24, 274, 92, 42, BLACK);// LR background
+  tft.fillRect(364, 274, 92, 42, BLACK);// RR background
   tft.setTextColor(WHITE, BLACK);
+
   for (int i = 0; i <= 42; i++) {
     tft.setTextSize(5);
     tft.setCursor(36, 74);
     tft.println(i);
     tft.setCursor(376, 74);
     tft.println(i);
+    tft.setCursor(36, 274);
+    tft.println(i);
+    tft.setCursor(376, 274);
+    tft.println(i);
     delay(60);
   }
-  tft.setTextColor(YELLOW, BLACK);
-  tft.setTextSize(5);
-  tft.setCursor(24, 74);
-  tft.println("MAX");
-  tft.setCursor(364, 74);
-  tft.println("MAX");
-
-  delay(2000);
+  delay(200);
+  return micros() - start;
 }
 
 
