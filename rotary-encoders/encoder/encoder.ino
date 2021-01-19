@@ -44,9 +44,9 @@ Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
 // number of encoders
 int numEnc = 4;
 // define all the A pins on each encoder (in order)
-int encPinA[4] = {30, 32, 34, 36};
+const int encPinA[4] = {30, 32, 34, 36};
 // define all the B pins on each encoder (in order)
-int encPinB[4] = {31, 33, 35, 37};
+const int encPinB[4] = {31, 33, 35, 37};
 // last mode of each pin (HIGH/LOW) for comparison - see if it changed
 int lastModeA[4];
 int lastModeB[4];
@@ -75,19 +75,19 @@ int lrSensor = 0;
 int rrSensor = 0;
 
 // height sensor pins
-int lfSensorPin = 6;
-int rfSensorPin = 7;
-int lrSensorPin = 8;
-int rrSensorPin = 9;
+const int lfSensorPin = 6;
+const int rfSensorPin = 7;
+const int lrSensorPin = 8;
+const int rrSensorPin = 9;
 
 // valve block controls
-int lfValvePin = 10;
-int rfValvePin = 11;
-int lrValvePin = 12;
-int rrValvePin = 13;
-int DiaphramValvePin = 14;
-int OutletValvePin   = 15;
-int InletValvePin    = 16;
+const int lfValvePin = 10;
+const int rfValvePin = 11;
+const int lrValvePin = 12;
+const int rrValvePin = 13;
+const int DiaphramValvePin = 14;
+const int OutletValvePin   = 15;
+const int InletValvePin    = 16;
 
 
 // individual wheel dwell time
