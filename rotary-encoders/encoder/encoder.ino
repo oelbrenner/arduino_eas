@@ -190,8 +190,8 @@ unsigned long LFcolorSegment() {
 int LFindicator(int lfSensor) {
   // indicator top:0,1  bottom 114,115
   LFcolorSegment();
-  tft.drawRect(9,  lfSensor,      22, 6, BLACK);
-  tft.fillRect(10, (lfSensor +1), 21, 5, WHITE);
+  tft.drawRect(9,  lfSensor,      22, 8, BLACK);
+  tft.fillRect(10, (lfSensor +1), 21, 6, WHITE);
 
   //tft.drawRect(9,  114, 22, 6, BLACK);
   //tft.fillRect(10, 115, 21, 5, WHITE);
@@ -233,8 +233,9 @@ int read_height_sensors() {
   Serial.print("-- reading height sensors --");
   Serial.println();
   // analog reads from the height sensors
-  // then map to the range of the display 
-  lfSensor = map(analogRead(lfSensorPin), 0, 1023, 114, 0);
+  // then map to the range of the display keep this 1 pixel
+  // short of the box size on both ends
+  lfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
   //Serial.println("Left Front Height: ");
   //Serial.println(lfSensor);
   LFindicator(lfSensor);
@@ -413,6 +414,16 @@ void decrement_encoder (int encoderNum, int encoderValue, int encoderValueLast) 
   Serial.print(encoderValueLast);
   Serial.println();
 
+}
+
+void up_arrow() {
+  //fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3,// uint16_t t)
+  //tft.fillTriangle(x1,y1,x2,y2,x3,y3,t);
+}
+
+void down_arrow() {
+  //fillTriangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2, int16_t x3, int16_t y3,// uint16_t t)
+  //tft.fillTriangle(x1,y1,x2,y2,x3,y3,t);
 }
 
 
