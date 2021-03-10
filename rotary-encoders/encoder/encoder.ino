@@ -152,93 +152,88 @@ unsigned long blackScreen() {
 unsigned long colorSegments() {
   // position: left-right,up-down,width,height,color
   // color segments: red, yellow, green orange
-  // indicator
-  //black outline: 0-113
-  //white fill: 1-114
+  // indicator: black outline: 0-113,  white fill: 1-114
   LFcolorSegment();
   RFcolorSegment();
   LRcolorSegment();
-  LRindicator();
   RRcolorSegment();
 }
 
-unsigned long testColorSegments() {
-  unsigned long start = micros();
-  // test stuff
-  tft.fillRect(200, 25, 21, 65, GREEN); // test
-  tft.fillRect(200, 10, 21, 30, YELLOW); // LF
-  tft.fillRect(200,  0, 21, 10, RED); // LF
-  tft.fillRect(200, 84, 21, 30, ORANGE); // LF
-  // indicator
-  tft.drawRect(209,  0, 22, 6, BLACK);
-  tft.fillRect(210,  1, 21, 5, WHITE);
-  tft.drawRect(209, 109, 22, 6, BLACK);
-  tft.fillRect(210, 110, 21, 5, WHITE);
-  return micros() - start;
+// Left Front
+void LFcolorSegment() {
+  tft.fillRect(0,  0, 21, 10, RED);
+  tft.fillRect(0, 10, 21, 30, YELLOW);
+  tft.fillRect(0, 40, 21, 50, GREEN);
+  tft.fillRect(0, 90, 21, 30, ORANGE);
+  tft.fillRect(21, 1, 10, 118, BLACK); // black out area under indicator
 }
-
-unsigned long LFcolorSegment() {
-  // Left Front
-  tft.fillRect(0,  0, 21, 10, RED); // LF
-  tft.fillRect(0, 10, 21, 30, YELLOW); // LF
-  tft.fillRect(0, 40, 21, 50, GREEN); // LF
-  tft.fillRect(0, 90, 21, 30, ORANGE); // LF
-  // black out area under indicator
-  tft.fillRect(21, 1, 10, 118, BLACK); // LF
-}
-
 int LFindicator(int lfSensor) {
   // indicator top:0,1  bottom 114,115
   LFcolorSegment();
   tft.drawRect(9,  lfSensor,      22, 8, BLACK);
   tft.fillRect(10, (lfSensor +1), 21, 6, WHITE);
-
-  //tft.drawRect(9,  114, 22, 6, BLACK);
-  //tft.fillRect(10, 115, 21, 5, WHITE);
 }
 
-unsigned long RFcolorSegment() {
-  // Right Front
-  tft.fillRect(459,   0, 21, 10, RED); // RF
-  tft.fillRect(459,  10, 21, 30, YELLOW); // RF
-  tft.fillRect(459,  40, 21, 50, GREEN); // RF
-  tft.fillRect(459,  90, 21, 30, ORANGE); // RF
+// Right Front
+void RFcolorSegment() {
+  tft.fillRect(459,  0, 21, 10, RED); // RF
+  tft.fillRect(459, 10, 21, 30, YELLOW); // RF
+  tft.fillRect(459, 40, 21, 50, GREEN); // RF
+  tft.fillRect(459, 90, 21, 30, ORANGE); // RF
+  tft.fillRect(447,  1, 12, 118, BLACK); // black out area under indicator
 }
-
-unsigned long LRcolorSegment() {
-  // Left Rear
-  tft.fillRect(0,   200, 21, 10, RED); // LR
-  tft.fillRect(0,   210, 21, 30, YELLOW); // LR
-  tft.fillRect(0,   240, 21, 50, GREEN); // LR
-  tft.fillRect(0,   290, 21, 30, ORANGE); // LR
-}
-
-unsigned long LRindicator() {
+int RFindicator(int rfSensor) {
   // indicator top:200,201  bottom 314,315
-  tft.drawRect(9,  200, 22, 6, BLACK);
-  tft.fillRect(10, 201, 21, 5, WHITE);
-  tft.drawRect(9,  314, 22, 6, BLACK);
-  tft.fillRect(10, 315, 21, 5, WHITE);
+  RFcolorSegment();
+  tft.drawRect(448, rfSensor,      22, 8, BLACK);
+  tft.fillRect(447, (rfSensor +1), 21, 6, WHITE);
 }
 
-unsigned long RRcolorSegment() {
+// Left Rear
+void LRcolorSegment() {
+  tft.fillRect(0,  200, 21, 10, RED); // LR
+  tft.fillRect(0,  210, 21, 30, YELLOW); // LR
+  tft.fillRect(0,  240, 21, 50, GREEN); // LR
+  tft.fillRect(0,  290, 21, 30, ORANGE); // LR
+  tft.fillRect(21, 201, 10, 118, BLACK); // black out area under indicator
+}
+int LRindicator(int lrSensor) {
+  // indicator top:200,201  bottom 314,315
+  LRcolorSegment();
+  tft.drawRect(9,  lrSensor,      22, 8, BLACK);
+  tft.fillRect(10, (lrSensor +1), 21, 6, WHITE);
+}
+
+void RRcolorSegment() {
   // Right Rear
   tft.fillRect(459, 200, 21, 10, RED); // RR
   tft.fillRect(459, 210, 21, 30, YELLOW); // RR
   tft.fillRect(459, 240, 21, 50, GREEN); // RR
   tft.fillRect(459, 290, 21, 30, ORANGE); // RR
+  tft.fillRect(447, 201, 12, 118, BLACK); // black out area under indicator
+}
+int RRindicator(int rrSensor) {
+  // indicator top:200,201  bottom 314,315
+  RRcolorSegment();
+  tft.drawRect(448, rrSensor,      22, 8, BLACK);
+  tft.fillRect(447, (rrSensor +1), 21, 6, WHITE);
 }
 
 int read_height_sensors() {
-  Serial.print("-- reading height sensors --");
-  Serial.println();
-  // analog reads from the height sensors
-  // then map to the range of the display keep this 1 pixel
-  // short of the box size on both ends
+  // analog read the height sensors then map to the range of the display
+  // keep this short of the box size on both ends
   lfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
-  //Serial.println("Left Front Height: ");
-  //Serial.println(lfSensor);
   LFindicator(lfSensor);
+
+  rfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
+  RFindicator(rfSensor);
+
+  lrSensor = map(analogRead(lfSensorPin), 0, 1023, 311, 201);
+  LRindicator(lrSensor);
+
+  rrSensor = map(analogRead(lfSensorPin), 0, 1023, 311, 201);
+  RRindicator(rrSensor);
+
   // map: (pot value low, pot value high, range start, range end)
   //current_wheel = "lf"
   //update_height(lfsensor);
@@ -280,23 +275,16 @@ unsigned long splashScreen() {
 }
 
 unsigned long heightSelectBoxes(uint16_t color) {
-  unsigned long start = micros();
-  // left front
-  tft.drawRect(20, 0, 100, 120, color);
-  // right front
-  tft.drawRect(360, 0, 100, 120, color);
-  // left rear
-  tft.drawRect(20, 200, 100, 120, color);
-  // right rear
-  tft.drawRect(360, 200, 100, 120, color);
-
   // text rectangle
+  tft.drawRect(20, 0, 100, 120, color); // left front
+  tft.drawRect(360, 0, 100, 120, color); // right front
+  tft.drawRect(20, 200, 100, 120, color); // left rear
+  tft.drawRect(360, 200, 100, 120, color); // right rear
   // fill the background
   tft.fillRect(24, 74, 92, 42, BLACK); // LF background
   tft.fillRect(364, 74, 92, 42, BLACK);// RF background
   tft.fillRect(24, 274, 92, 42, BLACK);// LR background
   tft.fillRect(364, 274, 92, 42, BLACK);// RR background
- 
   // put values in box
   tft.setTextColor(WHITE, BLACK);
   tft.setTextSize(5);
@@ -322,9 +310,6 @@ unsigned long heightSelectBoxes(uint16_t color) {
   //  tft.println(i);
   //  delay(60);
   //}
-
-  delay(100);
-  return micros() - start;
 }
 
 
