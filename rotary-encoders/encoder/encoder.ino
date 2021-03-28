@@ -8,8 +8,6 @@
 // digital pins: d0-d54
 // see README for pin restrictions
 
-// LED pin to act as stand in for mosfet
-const int mosfetLed_Pin = 13;
 // screen setup
 #include <SPI.h>
 #include "Adafruit_GFX.h"
@@ -114,27 +112,25 @@ void setup () {
   Serial.println("building color bars");
   colorSegments();
 
-  // pinMode(mosfetLed_Pin, OUTPUT);
-  // digitalWrite(mosfetLed_Pin, solenoidActivity_State);
-  // // loop to set up each encoder's initial values
-  // for (c = 0; c < numEnc; c++) {
-  //   // tell us what it is doing
-  //   Serial.print("Initializing encoders ");
-  //   Serial.println(c);
-  //   // set the pins form INPUT
-  //   pinMode(encPinA[c], INPUT);
-  //   pinMode(encPinB[c], INPUT);
-  //   // set the modes and positions - on first read, it may change position once
-  //   //   depending on how the encoders are sitting (having a HIGH position that
-  //   //   gets compared to the initial LOW setting here in the first iteration of
-  //   //   the loop).
-  //   lastModeA[c] = LOW;
-  //   lastModeB[c] = LOW;
-  //   curModeA[c] = LOW;
-  //   curModeB[c] = LOW;
-  //   encPos[c] = 0;
-  //   encPosLast[c] = 0;
-  // }
+  // loop to set up each encoder's initial values
+  for (c = 0; c < numEnc; c++) {
+    // tell us what it is doing
+    Serial.print("Initializing encoders ");
+    Serial.println(c);
+    // set the pins form INPUT
+    pinMode(encPinA[c], INPUT);
+    pinMode(encPinB[c], INPUT);
+    // set the modes and positions - on first read, it may change position once
+    //   depending on how the encoders are sitting (having a HIGH position that
+    //   gets compared to the initial LOW setting here in the first iteration of
+    //   the loop).
+    lastModeA[c] = LOW;
+    lastModeB[c] = LOW;
+    curModeA[c] = LOW;
+    curModeB[c] = LOW;
+    encPos[c] = 0;
+    encPosLast[c] = 0;
+  }
 }
 
 void loop(void) {
