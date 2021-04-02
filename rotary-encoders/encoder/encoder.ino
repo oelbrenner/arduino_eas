@@ -57,7 +57,7 @@ int c = 0;
 
 byte solenoidActivity_State = LOW;
 // use the following delay to deal with encoder bounce
-const int encoderCheckInterval = 1000;
+const int encoderCheckInterval = 1500;
 // stores the value of millis() in each iteration of loop()
 unsigned long currentMillis = 0;
 // time since encoder was checked
@@ -134,10 +134,11 @@ void setup () {
 }
 
 void loop(void) {
-  Serial.println("read height sensors");
+  //Serial.println("read height sensors");
   read_height_sensors();
-  Serial.println("---------");
-  Serial.println("Loop complete.");
+  //Serial.println("---------");
+  check_encoders();
+  //Serial.println("Loop complete.");
 }
 
 // fill screen with black
@@ -245,7 +246,7 @@ int read_height_sensors() {
   //rrSensor = analogRead(rrSensorPin);
   //Serial.println("Right Rear Height: ");
   //Serial.println(rrSensor);
-  Serial.print("-- height sensor read complete --");
+  //Serial.print("-- height sensor read complete --");
   return lfSensor;
 }
 
@@ -292,20 +293,6 @@ unsigned long heightSelectBoxes(uint16_t color) {
   tft.println("10");
   tft.setCursor(376, 274);
   tft.println("10");
-
-  // test loop
-  //for (int i = 0; i <= 10; i++) {
-  //  tft.setTextSize(5);
-  //  tft.setCursor(36, 74);
-  //  tft.println(i);
-  //  tft.setCursor(376, 74);
-  //  tft.println(i);
-  //  tft.setCursor(36, 274);
-  //  tft.println(i);
-  //  tft.setCursor(376, 274);
-  //  tft.println(i);
-  //  delay(60);
-  //}
 }
 
 
@@ -359,6 +346,9 @@ void check_encoders() {
       lastModeB[c] = curModeB[c];
       // if this encoder's position changed, flag the change variable
       if (encPos[c] != encPosLast[c]) {
+        // extra debounce
+        //delay(100);
+
         change = 1;
         //update_screen;
       }
