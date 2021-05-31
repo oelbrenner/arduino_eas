@@ -1,14 +1,26 @@
 // Connections and Layout:
-// Connect the common (middle) pin on each encoder to 5v.
-// Connect a 10k resistor between ground and each pin on the board you are going to connect to an encoder.
-// This pulls the pins low to avoid fluttering mis-reads.
-// Connect the appropriate board pins the A and B pins on the encoder. Define which pins these are in the code.
+// Connect the common pin on each encoder to gnd.
+// Connect a 10k resistor between +5v and each pin on the board you are going to connect to an encoder.
+// This pulls the pins high to avoid fluttering mis-reads.
+
 // Board setup:
 // analog pins: a0 - a15
 // digital pins: d0-d54
 // see README for pin restrictions
 
-// screen setup
+// Rotary encoder library
+#include <Rotary.h>
+// set up each encoder's pins and start
+// Encoder pins
+// {LF, RF, LR, RR}
+// {30, 32, 34, 36} <-- A pins
+// {31, 33, 35, 37} <-- B pins
+Rotary eLF = Rotary(30, 31);
+Rotary eRF = Rotary(32, 33);
+Rotary eLR = Rotary(34, 35);
+Rotary eRR = Rotary(36, 37);
+
+// Screen setup
 #include <SPI.h>
 #include "Adafruit_GFX.h"
 #include "Adafruit_HX8357.h"
@@ -36,32 +48,14 @@ Adafruit_HX8357 tft = Adafruit_HX8357(TFT_CS, TFT_DC, TFT_RST);
 #define WHITE   0xFFFF
 #define ORANGE  0xFD20
 // Global vars
-// number of encoders
-int numEnc = 4;
-// define all the A pins on each encoder (in order)
-const int encPinA[4] = {30, 32, 34, 36};
-// define all the B pins on each encoder (in order)
-const int encPinB[4] = {31, 33, 35, 37};
-// last mode of each pin (HIGH/LOW) for comparison - see if it changed
-int lastModeA[4];
-int lastModeB[4];
-// current mode of each encoder pin (HIGH/LOW)
-int curModeA[4];
-int curModeB[4];
-// current and last encoder positions
-float encPos[4];
-float encPosLast[4];
-// utility variables for encoder timing
-int change = 0;
-int c = 0;
 
 byte solenoidActivity_State = LOW;
-// use the following delay to deal with encoder bounce
-const int encoderCheckInterval = 1500;
+// how often to check height sensor 
+const int heightSensorCheckInterval = 1000;
 // stores the value of millis() in each iteration of loop()
 unsigned long currentMillis = 0;
 // time since encoder was checked
-unsigned long previousEncoderCheck = 0;
+unsigned long heightSensorPreviousCheck = 0;
 
 // height sensor values
 int lfSensor = 0;
@@ -77,6 +71,12 @@ const int lfSensorPin = 6;
 const int rfSensorPin = 7;
 const int lrSensorPin = 8;
 const int rrSensorPin = 9;
+
+// height selection encoder value defaults
+int lfSelection = 25;
+int rfSelection = 25;
+int lrSelection = 25;
+int rrSelection = 25;
 
 // valve block controls
 const int lfValvePin = 10;
@@ -95,7 +95,7 @@ int allDwell = 300;
 void setup () {
   Serial.begin(9600);
   // refactor this to blink LED for boot sequence
-  Serial.println("Booting..");
+  Serial.print("Booting..");
   delay(20);
   Serial.println("Done");
   // start up the TFT screen
@@ -112,28 +112,26 @@ void setup () {
   Serial.println("building color bars");
   colorSegments();
 
-  // loop to set up each encoder's initial values
-  for (c = 0; c < numEnc; c++) {
-    // tell us what it is doing
-    Serial.print("Initializing encoders ");
-    Serial.println(c);
-    // set the pins form INPUT
-    pinMode(encPinA[c], INPUT);
-    pinMode(encPinB[c], INPUT);
-    // set the modes and positions - on first read, it may change position once
-    //   depending on how the encoders are sitting (having a HIGH position that
-    //   gets compared to the initial LOW setting here in the first iteration of
-    //   the loop).
-    lastModeA[c] = LOW;
-    lastModeB[c] = LOW;
-    curModeA[c] = LOW;
-    curModeB[c] = LOW;
-    encPos[c] = 0;
-    encPosLast[c] = 0;
-  }
+  // startup encoders
+  Serial.print("Initializing encoder: LF");
+  eLF.begin(false, true);
+  Serial.println(" Done");
+
+  Serial.print("Initializing encoder: RF");
+  eRF.begin(false, true);
+  Serial.println(" Done");
+
+  Serial.print("Initializing encoder: LR");
+  eLR.begin(false, true);
+  Serial.println(" Done");
+
+  Serial.print("Initializing encoder: RR");
+  eRR.begin(false, true);
+  Serial.println(" Done");
+  
 }
 
-void loop(void) {
+void loop() {
   //Serial.println("read height sensors");
   read_height_sensors();
   //Serial.println("---------");
@@ -217,37 +215,35 @@ int RRindicator(int rrSensor) {
 }
 
 int read_height_sensors() {
-  // analog read the height sensors then map to the range of the display
-  // keep this short of the box size on both ends
-  lfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
-  LFindicator(lfSensor);
 
-  rfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
-  RFindicator(rfSensor);
+  if (millis() - heightSensorPreviousCheck >= heightSensorCheckInterval) {
+    Serial.println("times up! checking height sensors");
+    heightSensorPreviousCheck = millis();
 
-  lrSensor = map(analogRead(lfSensorPin), 0, 1023, 311, 201);
-  LRindicator(lrSensor);
+    // analog read the height sensors then map to the range of the display
+    // keep this short of the box size on both ends
+    lfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
+    LFindicator(lfSensor);
 
-  rrSensor = map(analogRead(lfSensorPin), 0, 1023, 311, 201);
-  RRindicator(rrSensor);
+    rfSensor = map(analogRead(lfSensorPin), 0, 1023, 111, 1);
+    RFindicator(rfSensor);
 
-  // map: (pot value low, pot value high, range start, range end)
-  //current_wheel = "lf"
-  //update_height(lfsensor);
+    lrSensor = map(analogRead(lfSensorPin), 0, 1023, 311, 201);
+    LRindicator(lrSensor);
 
-  //rfSensor = analogRead(rfSensorPin);
-  //Serial.println("Right Front Height: ");
-  //Serial.println(rfSensor);
+    rrSensor = map(analogRead(lfSensorPin), 0, 1023, 311, 201);
+    RRindicator(rrSensor);
 
-  //lrSensor = analogRead(lrSensorPin);
-  //Serial.println("Left Rear Height: ");
-  //Serial.println(lrSensor);
+    // map: (pot value low, pot value high, range start, range end)
+    //current_wheel = "lf"
+    //update_height(lfsensor);
+    return lfSensor;
+  }
+  else {
+    //Serial.print("NOT checking encoders");
+    //Serial.println();
+  }
 
-  //rrSensor = analogRead(rrSensorPin);
-  //Serial.println("Right Rear Height: ");
-  //Serial.println(rrSensor);
-  //Serial.print("-- height sensor read complete --");
-  return lfSensor;
 }
 
 // startup message
@@ -286,104 +282,68 @@ unsigned long heightSelectBoxes(uint16_t color) {
   tft.setTextColor(WHITE, BLACK);
   tft.setTextSize(5);
   tft.setCursor(36, 74);
-  tft.println("10");
+  tft.println("LF");
   tft.setCursor(376, 74);
-  tft.println("10");
+  tft.println("RF");
   tft.setCursor(36, 274);
-  tft.println("10");
+  tft.println("LR");
   tft.setCursor(376, 274);
-  tft.println("10");
+  tft.println("RR");
 }
 
 
 void check_encoders() {
-  //Serial.print("entering check_encoders");
-  //Serial.println();
-
-  if (millis() - previousEncoderCheck >= encoderCheckInterval) {
-    //Serial.print("times up! checking encoders");
-    //Serial.println();
-    change = 0;
-    for (c = 0; c < numEnc; c++) {
-      // read the current state of the current encoder's pins
-      curModeA[c] = digitalRead(encPinA[c]);
-      curModeB[c] = digitalRead(encPinB[c]);
-      // compare the four possible states to figure out what has happened
-      //   then increment/decrement the current encoder's position
-      if (curModeA[c] != lastModeA[c]) {
-        if (curModeA[c] == LOW) {
-          if (curModeB[c] == LOW) {
-            decrement_encoder(c, encPos[c], encPosLast[c]);
-          } else {
-            increment_encoder(c, encPos[c], encPosLast[c]);
-          }
-        } else {
-          if (curModeB[c] == LOW) {
-            increment_encoder(c, encPos[c], encPosLast[c]);
-          } else {
-            decrement_encoder(c, encPos[c], encPosLast[c]);
-          }
-        }
-      }
-      if (curModeB[c] != lastModeB[c]) {
-        if (curModeB[c] == LOW) {
-          if (curModeA[c] == LOW) {
-            increment_encoder(c, encPos[c], encPosLast[c]);
-          } else {
-            decrement_encoder(c, encPos[c], encPosLast[c]);
-          }
-        } else {
-          if (curModeA[c] == LOW) {
-            decrement_encoder(c, encPos[c], encPosLast[c]);
-          } else {
-            increment_encoder(c, encPos[c], encPosLast[c]);
-          }
-        }
-      }
-      // set the current pin modes (HIGH/LOW) to be the last know pin modes
-      //   for the next loop to compare to
-      lastModeA[c] = curModeA[c];
-      lastModeB[c] = curModeB[c];
-      // if this encoder's position changed, flag the change variable
-      if (encPos[c] != encPosLast[c]) {
-        // extra debounce
-        //delay(100);
-
-        change = 1;
-        //update_screen;
-      }
-    }
+  unsigned char eLFstatus = eLF.process();
+  // debug state transitions
+  //Serial.print(digitalRead(30));
+  //Serial.print(" ");
+  //Serial.println(digitalRead(31));
+  if (eLFstatus) {
+    Serial.print("encoder: LF");
+    //Serial.println(eLFstatus == DIR_CW ? " Down v" : "Up   ^");
+    (eLFstatus == DIR_CW ? decrement_encoder(0) : increment_encoder(0));
   }
-  else {
-    Serial.print("NOT checking encoders");
-    Serial.println();
+
+  unsigned char eRFstatus = eRF.process();
+  if (eRFstatus) {
+    Serial.print("encoder: RF");
+    Serial.println(eRFstatus == DIR_CW ? " Down v" : "Up   ^");
+  }
+
+  unsigned char eLRstatus = eLR.process();
+  if (eLRstatus) {
+    Serial.print("encoder: LR");
+    Serial.println(eLRstatus == DIR_CW ? " Down v" : "Up   ^");
+  }
+
+  unsigned char eRRstatus = eRR.process();
+  if (eRRstatus) {
+    Serial.print("encoder: RR");
+    Serial.println(eRRstatus == DIR_CW ? " Down v" : "Up   ^");
   }
 }
 
-void increment_encoder (int encoderNum, int encoderValue, int encoderValueLast) {
-  Serial.print("entering increment_encoder");
-  Serial.println();
-  Serial.print("Encoder: ");
-  Serial.print(encoderNum);
-  encPos[c] = encPos[c] + .5;
-  Serial.print(" Value: ");
-  Serial.print(encoderValue);
-  Serial.print(" Last Value: ");
-  Serial.print(encoderValueLast);
-  Serial.println();
+void increment_encoder (int encoderNum) {
+  switch(encoderNum) {
+    case 0:
+      lfSelection = --lfSelection;
+      tft.fillRect(24, 74, 92, 42, BLACK); // LF background
+      tft.setCursor(34, 74);
+      tft.println(lfSelection);
+      Serial.println(lfSelection);
+    break;
+  }
 
 }
-void decrement_encoder (int encoderNum, int encoderValue, int encoderValueLast) {
-  Serial.print("entering decrement_encoder");
-  Serial.println();
-  Serial.print("Encoder: ");
-  Serial.print(encoderNum);
-  encPos[c] = encPos[c] - .5;
-  Serial.print(" Value: ");
-  Serial.print(encoderValue);
-  Serial.print(" Last Value: ");
-  Serial.print(encoderValueLast);
-  Serial.println();
+void decrement_encoder (int encoderNum) {
+  switch(encoderNum) {
+    case 0:
+      lfSelection = ++lfSelection;
+      tft.fillRect(24, 74, 92, 42, BLACK); // LF background
+      tft.setCursor(36, 74);
+      tft.println(lfSelection);
+    break;
+  }
 
 }
 
